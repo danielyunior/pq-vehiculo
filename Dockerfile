@@ -1,7 +1,7 @@
-# Imagen oficial de PHP 8.2 con soporte CLI
-FROM php:8.2-cli
+# Usar PHP 8.3 (compatible con Laravel 10, 11 y 12)
+FROM php:8.3-cli
 
-# Instalar dependencias del sistema necesarias para Laravel, DomPDF, QR y ZIP
+# Instalar dependencias del sistema para Laravel, DomPDF, QR y ZIP
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -20,18 +20,18 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer 2
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Definir directorio de trabajo dentro del contenedor
+# Definir directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar todos los archivos del proyecto
+# Copiar los archivos del proyecto
 COPY . .
 
-# Instalar dependencias de Laravel para producción
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Crear carpetas necesarias de almacenamiento y asignar permisos
+# Crear carpetas de almacenamiento ANTES de ejecutar composer install
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Exponer el puerto dinámico de Render y arrancar Laravel
+# Instalar dependencias de Laravel
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Exponer el puerto de Render y arrancar el servidor
 CMD php artisan storage:link || true && php -S 0.0.0.0:${PORT:-8000} -t public
