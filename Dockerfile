@@ -1,28 +1,31 @@
-# Usar PHP 8.4 para cumplir con los requisitos de tus dependencias
 FROM php:8.4-cli
 
-# Instalar dependencias del sistema y extensiones necesarias para Laravel, DomPDF, QR y ZIP
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Definir directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar todos los archivos del proyecto (incluyendo vendor)
-COPY . .
+# Instalar dependencias del sistema y extensiones PHP necesarias para Laravel + MySQL
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Crear carpetas de almacenamiento y asignar permisos
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+# Copiar el código del proyecto (incluyendo vendor si está versionado)
+COPY . /var/www/html
 
-# Arrancar el servidor web en el puerto de Render apuntando a public
-CMD php -S 0.0.0.0:${PORT:-8000} -t public
+# Asegurar carpetas y permisos de escritura para Laravel
+RUN mkdir -p storage/framework/sessions \
+             storage/framework/views \
+             storage/framework/cache \
+             storage/logs \
+             bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
+
+# Exponer puerto (Render asigna PORT dinámicamente)
+EXPOSE 8080
+
+# Arrancar el servidor PHP apuntando a public/ y usando el PORT de Render
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
